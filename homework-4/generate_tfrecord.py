@@ -14,7 +14,8 @@ from __future__ import absolute_import
 import os
 import io
 import pandas as pd
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from PIL import Image
 from object_detection.utils import dataset_util
@@ -28,11 +29,21 @@ FLAGS = flags.FLAGS
 
 
 # TO-DO replace this with label map
+#{'0': 'Cassava Bacterial Blight (CBB)', '1': 'Cassava Brown Streak Disease (CBSD)', '2': 'Cassava Green Mottle (CGM)', '3': 'Cassava Mosaic Disease (CMD)', '4': 'Healthy'}
 def class_text_to_int(row_label):
-    if row_label == 'raccoon':
+    if row_label == 'Cassava Bacterial Blight (CBB)':
+        return 0
+    elif row_label == 'Cassava Brown Streak Disease (CBSD)':
         return 1
+    elif row_label == 'Cassava Green Mottle (CGM)':
+        return 2
+    elif row_label == 'Cassava Mosaic Disease (CMD)':
+        return 3
+    elif row_label == 'Healthy':
+        return 4
     else:
-        None
+        print(row_label)
+        return None
 
 
 def split(df, group):
@@ -48,7 +59,7 @@ def create_tf_example(group, path):
     image = Image.open(encoded_jpg_io)
     width, height = image.size
 
-    filename = group.filename.encode('utf8')
+    filename = group.filename.encode('utf-8')
     image_format = b'jpg'
     xmins = []
     xmaxs = []
@@ -62,7 +73,7 @@ def create_tf_example(group, path):
         xmaxs.append(row['xmax'] / width)
         ymins.append(row['ymin'] / height)
         ymaxs.append(row['ymax'] / height)
-        classes_text.append(row['class'].encode('utf8'))
+        classes_text.append(row['class'].encode('utf-8'))
         classes.append(class_text_to_int(row['class']))
 
     tf_example = tf.train.Example(features=tf.train.Features(feature={
@@ -83,9 +94,9 @@ def create_tf_example(group, path):
 
 
 def main(_):
-    writer = tf.python_io.TFRecordWriter(FLAGS.output_path)
+    writer = tf.io.TFRecordWriter(FLAGS.output_path)
     path = os.path.join(FLAGS.image_dir)
-    examples = pd.read_csv(FLAGS.csv_input)
+    examples = pd.read_csv(FLAGS.csv_input, encoding='utf-8')
     grouped = split(examples, 'filename')
     for group in grouped:
         tf_example = create_tf_example(group, path)
